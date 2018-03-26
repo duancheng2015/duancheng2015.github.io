@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<!-- saved from url=(0050)https://www.ibm.com/developerworks/cn/linux/l-kdb/ -->
+<html lang="en" style="" class="applicationcache geolocation history postmessage svg websockets localstorage sessionstorage websqldatabase webworkers hashchange pointerevents canvas audio canvastext video webgl cssgradients multiplebgs opacity rgba inlinesvg hsla supports svgclippaths smil no-touchevents fontface generatedcontent textshadow cssanimations backgroundsize borderimage borderradius boxshadow csscolumns csscolumns-width csscolumns-span csscolumns-fill csscolumns-gap csscolumns-rule csscolumns-rulecolor csscolumns-rulestyle csscolumns-rulewidth csscolumns-breakbefore csscolumns-breakafter csscolumns-breakinside flexbox flexboxlegacy cssreflections csstransforms csstransforms3d csstransitions indexeddb indexeddb-deletedatabase js ibm-v18 ibm-cxtype-4g no-hires win chrome chrome6 webkit webkit5 greater-china-imt ibm-grid-xlarge"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	
+<meta name="viewport" content="width=device-width, initial-scale=1">      
+<link rel="icon" href="https://www.ibm.com/favicon.ico">
+<link rel="canonical" href="http://www.ibm.com/developerworks/cn/linux/l-kdb/index.html">
+<meta name="geo.country" content="CN">
+<meta name="dcterms.rights" content="© Copyright IBM Corporation 2005">
+<meta name="dcterms.date" content="2005-12-18">
+<meta name="description" content="本文将首先介绍 Linux 内核上的一些内核代码监视和错误跟踪技术，这些调试和跟踪方法因所要求的使用环境和使用方法而各有不同，然后重点介绍三种 Linux 内核的源代码级的调试方法。">	
+<meta name="keywords" content="Linux kernel, Linux 内核, 调试, kdb, Kprobes, kgdb, UML, VMware, SkyEye, 李树雷,陈渝, tttlca">
+<meta name="robots" content="index,follow">
+<title>Linux 系统内核的调试</title>
+    
+<script src="./Linux 系统内核的调试_files/analytics-marketing.js.下载" type="text/javascript"></script><script type="text/javascript" async="" charset="utf-8" id="utag_19" src="./Linux 系统内核的调试_files/hotjar-42920.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_98" src="./Linux 系统内核的调试_files/atrk.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_53" src="./Linux 系统内核的调试_files/js"></script><script type="text/javascript" async="" charset="utf-8" id="tealium_cormetrics2" src="./Linux 系统内核的调试_files/eluminate.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="dle_api_12067ef682b9aaf3b3cd2eb5c1ae6f64ca8c0cedde43750986c812c5c7560e4b" src="./Linux 系统内核的调试_files/p_12067ef682b9aaf3b3cd2eb5c1ae6f64ca8c0cedde43750986c812c5c7560e4b.js.下载"></script><script src="./Linux 系统内核的调试_files/p_devwrks.js.下载" type="application/javascript" async=""></script><script src="./Linux 系统内核的调试_files/p_devwrks.js.下载" type="application/javascript" async=""></script><script src="./Linux 系统内核的调试_files/var=_appInfo.lotame" type="application/javascript" async=""></script><script src="./Linux 系统内核的调试_files/saved_resource" type="application/javascript" async=""></script><script src="./Linux 系统内核的调试_files/utag.js.下载" type="text/javascript" async=""></script><script> 
+    digitalData = {
+        "page":{
+            "category":{
+                "primaryCategory":"SOFDCLNXCN"
+            },
+            "pageInfo":{
+                "effectiveDate":"2005-12-18",
+                "language":"zh-CN",
+                "publishDate":"2005-12-18",
+                "publisher":"IBM Corporation",
+                "version":"v18",
+                "ibm":{ 
+                    "contentDelivery":"IBM developerWorks template",
+                    "contentProducer":"IBM developerWorks",
+                    "country":"CN",
+                    "owner":"developerWorks/China/IBM",
+                    "siteID":"DEVWRKS",
+                    "subject":"SWGC0",
+                    "type":"CT316",
+                    "topic":"调试,内核",
+                    "topicId":"27,87",
+                    "contentArea":"linux",
+                    "contentAreaId":"2",
+                    "contentType":"article",
+                    "contentId":"100456",
+                },
+                "keywords":"Linux kernel, Linux 内核, 调试, kdb, Kprobes, kgdb, UML, VMware, SkyEye, 李树雷,陈渝, tttlca",
+                "description":"本文将首先介绍 Linux 内核上的一些内核代码监视和错误跟踪技术，这些调试和跟踪方法因所要求的使用环境和使用方法而各有不同，然后重点介绍三种 Linux 内核的源代码级的调试方法。"
+            }
+        }
+    };
+    window._analytics = {
+        "coremetrics": false,
+        "optimizely": false,
+        "googleAddServices": false,
+        "addRoll": false,
+        "intercom": false,
+        "fullStory": false,
+        "hotjar": false,
+        "tealeaf": false,
+        "nps": false,
+        "segment_key": 'HU3dbkAG5wE0F1IkRf9S1RexlAqo3jby'
+    };
+</script>
+	
+    <meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@developerworks">
+<meta property="og:title" content="Linux 系统内核的调试">
+<meta property="og:description" content="本文将首先介绍 Linux 内核上的一些内核代码监视和错误跟踪技术，这些调试和跟踪方法因所要求的使用环境和使用方法而各有不同，然后重点介绍三种 Linux 内核的源代码级的调试方法。">
+    <meta property="og:image" content="http://www.ibm.com/developerworks/i/dw-social-201508.png">
+<!-- Segment meta tag -->
+<meta name="segment" property="developerWorks (developerWorks)" producttitle="developerWorks" value="Linux Chinese (developerWorks)">      
+<!-- SITE MON : START (DO NOT DELETE) -->
+<!-- developerWorks monitoring token -->
+<!-- SITE MON : END (DO NOT DELETE) -->
+
+<!-- HEADER_SCRIPTS_AND_CSS_INCLUDE -->
+<!-- <script src="//cdn.optimizely.com/js/5399420604.js"></script> -->
+<!-- BEGIN: Use this section to set page specific variables for the Page Tag -->
+<script language="JavaScript">var NTPT_PGEXTRA="ibmSkillLevel=1&ibmCmaId=100456&ibmContentAreas=linux";</script>
+<!--END -->
+<script src="./Linux 系统内核的调试_files/ida_stats.js.下载"></script>
+<link href="./Linux 系统内核的调试_files/www.css" rel="stylesheet">
+<link href="./Linux 系统内核的调试_files/syntaxhighlighter.css" rel="stylesheet">
+<script src="./Linux 系统内核的调试_files/www.js.下载"></script><style></style>
+<script src="./Linux 系统内核的调试_files/syntaxhighlighter.js.下载"></script>    
+<link href="./Linux 系统内核的调试_files/tables.css" rel="stylesheet">
+<script src="./Linux 系统内核的调试_files/tables.js.下载"></script>   
+<!--  Masthead/footer  -->
+<link href="./Linux 系统内核的调试_files/dw-mf-v18.css" rel="stylesheet">
+<!-- <link href="//dw1.s81c.com/developerworks/css/dw-mf/v18/alt-signedin-ux.css" rel="stylesheet" /> -->   
+<!--[if lt IE 9]>
+    <link href="//dw1.s81c.com/developerworks/css/dw-mf/v18/dw-mf-ie8fix.css?v=022216" rel="stylesheet" />
+<![endif]-->
+<link href="./Linux 系统内核的调试_files/dw-article.css" rel="stylesheet">
+<script src="./Linux 系统内核的调试_files/dw-auth-properties.js.下载"></script>
+<script src="./Linux 系统内核的调试_files/dw-auth.js.下载"></script>
+<script src="./Linux 系统内核的调试_files/dw-mf.js.下载"></script>
+<script src="./Linux 系统内核的调试_files/dw-include.js.下载"></script>     
+<script src="./Linux 系统内核的调试_files/dw-article.js.下载"></script>
+<script src="./Linux 系统内核的调试_files/dw-auto-links.js.下载"></script>     
+<script src="./Linux 系统内核的调试_files/tactic.js.下载"></script>
+<script src="./Linux 系统内核的调试_files/tacticbindlinks.js.下载"></script>
+
+<!-- 
+<PageMap>
+    <DataObject type="document">
+        <Attribute name="topic">调试,内核</Attribute>
+        <Attribute name="topicId">27,87</Attribute>
+        <Attribute name="contentArea">linux</Attribute>
+        <Attribute name="contentAreaId">2</Attribute>
+        <Attribute name="abstract">本文将首先介绍 Linux 内核上的一些内核代码监视和错误跟踪技术，这些调试和跟踪方法因所要求的使用环境和使用方法而各有不同，然后重点介绍三种 Linux 内核的源代码级的调试方法。</Attribute>
+        <Attribute name="pub.date">2005-12-18</Attribute>
+        <Attribute name="contentType">article</Attribute>
+    </DataObject>
+</PageMap>
+-->        
+
+<style id="ibm-masthead-hidelinks">@media screen and (max-width: 552px) { .ibm-masthead-categories,#ibm-megamenu-sections{display:none} }@media screen and (max-width: 552px) { .ibm-mh-marketplace-link{display:none} }</style><script type="text/javascript" async="" charset="utf-8" id="utag_ibm.web_53" src="./Linux 系统内核的调试_files/utag.53.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ibm.web_46" src="./Linux 系统内核的调试_files/utag.46.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ibm.web_94" src="./Linux 系统内核的调试_files/utag.94.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ibm.web_98" src="./Linux 系统内核的调试_files/utag.98.js.下载"></script><style id="ibm-sitenav-menu-hidelinks">@media screen and (max-width: 602px) { .ibm-sitenav-menu-list{display:none} } @media screen and (min-width: 603px) { .ibm-mobilemenu-sitenavmenu {display:none} }</style><script type="text/javascript" async="" charset="utf-8" id="tiqapp" src="./Linux 系统内核的调试_files/utag.v.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ibm.web_19" src="./Linux 系统内核的调试_files/utag.19.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="LOTCC_10026" src="./Linux 系统内核的调试_files/cc.js.下载"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ibm.web_45" src="./Linux 系统内核的调试_files/utag.45.js.下载"></script><script language="javascript" type="text/javascript" src="./Linux 系统内核的调试_files/50200000.js.下载"></script><script language="javascript" type="text/javascript" src="./Linux 系统内核的调试_files/rules_50200000.js.下载"></script><script language="javascript" type="text/javascript" src="./Linux 系统内核的调试_files/dispatcher-v3.js.下载"></script><style type="text/css" class="jquery-comments-css">.jquery-comments ul.navigation li.active:after {background: #2793e6 !important;</style><style type="text/css" class="jquery-comments-css">.jquery-comments ul.navigation ul.dropdown li.active {background: #2793e6 !important;</style><style type="text/css" class="jquery-comments-css">.jquery-comments .highlight-background {background: #2793e6 !important;</style><style type="text/css" class="jquery-comments-css">.jquery-comments .highlight-font {color: #2793e6 !important;}</style><style type="text/css" class="jquery-comments-css">.jquery-comments .highlight-font-bold {color: #2793e6 !important;font-weight: bold;}</style><script src="./Linux 系统内核的调试_files/yahoo-min.js.下载" type="text/javascript"></script><script src="./Linux 系统内核的调试_files/cp-v3.js.下载" type="text/javascript"></script><script src="./Linux 系统内核的调试_files/json-min.js.下载" type="text/javascript"></script><img width="1" height="1" src="./Linux 系统内核的调试_files/b=48350156"><script type="text/javascript" async="" charset="utf-8" id="tealium_visitor_service_45main" src="./Linux 系统内核的调试_files/015fbd6760f900000334c8b7eac90406d003d06500bd0"></script><script async="" src="./Linux 系统内核的调试_files/modules-6081698dc2a04df4b0848520a08b4ffb.js.下载"></script><style type="text/css">iframe#_hjRemoteVarsFrame {display: none !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important;}</style><script type="text/javascript" async="" charset="utf-8" id="tealium_visitor_service_45main" src="./Linux 系统内核的调试_files/015fbd6760f900000334c8b7eac90406d003d06500bd0(1)"></script></head>
+<body id="ibm-com" class="ibm-type ibm-sitenav-menu ibm-sitenav-menu-sticky ibm-masthead-sticky">
+	
+<div id="ibm-top" class="ibm-landing-page dw-sitenav">
+
+<!-- MASTHEAD_BEGIN -->
+<div id="ibm-masthead" role="banner" aria-label="IBM" class="ibm-mhtype-minimal hastransition">
+    <div id="ibm-universal-nav" class="">    
+  
+        <nav role="navigation" aria-label="IBM">
+            <div id="ibm-home"><a href="https://www.ibm.com/cn/zh/?lnk=m">IBM®</a></div>
+            <ul id="ibm-menu-links" role="toolbar" aria-label="Site map" class="ibm-hide">
+                <li><a href="https://www.ibm.com/sitemap/cn/zh/">站点地图</a></li>
+            </ul><div class="ibm-masthead-rightside"><p class="ibm-mh-marketplace-link ibm-button-link ibm-fleft ibm-padding-bottom-0"><a class="ibm-btn-small ibm-btn-sec ibm-btn-blue-50" href="https://www.ibm.com/marketplace/?lnk=mp">市场</a></p><div id="ibm-search-module" role="search" aria-labelledby="ibm-masthead" class="ibm-has-scope">
+            <div class="ibm-masthead-search-close"><p class="ibm-ind-link ibm-icononly ibm-padding-bottom-0"><a href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#" class="ibm-close-link ibm-nospacing">关闭</a></p></div><form id="ibm-search-form" action="https://www.ibm.com/Search/" method="get" aria-labelledby="ibm-masthead">
+                <p>
+                    <label for="q">IBM</label>
+                    <input type="text" maxlength="100" value="" placeholder="搜索" name="q" id="q" aria-label="搜索 developerWorks" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-owns="ibm-search-typeahead-container"><input name="lnk" type="hidden" value="mhsrch">
+                    <input type="hidden" value="18" name="v">
+                    <input type="hidden" value="utf" name="en">
+                    <input type="hidden" value="zh" name="lang">
+                    <input type="hidden" value="cn" name="cc">
+                    <input type="hidden" name="sn" value="dw">
+                    <input type="hidden" name="dws" value="cndw">
+                    <input type="hidden" name="hpp" value="20">
+                    <span class="ibm-search-scope ibm-fadeout" aria-expanded="true"><input class="ibm-styled-checkbox" data-init="false" type="checkbox" name="sn" value="" id="ibm-mh-scopeoption"> <label for="ibm-mh-scopeoption">In Marketplace</label></span><button role="button" type="submit" id="ibm-search" class="ibm-search-link" value="提交"><span class="ibm-access">提交</span></button>
+                </p>
+            </form><form class="ibm-hide" id="ibm-default-scope-form" action="https://www.ibm.com/marketplace/search/cn/zh-cn" method="get"><input name="terms" type="text"><input name="lnk" type="hidden" value="mhmpsrch"></form>
+        </div><div id="ibm-search-typeahead-container" aria-expanded="true" class="ibm-search-typeahead-container ibm-fadeout"></div><ul aria-label="Tools" role="menubar" class="ibm-masthead-iconsonly"><li role="presentation" class="ibm-masthead-item-signin"><button role="button" aria-haspopup="true" aria-owns="ibm-signin-minimenu-container" class="ibm-profile-link">我的 IBM</button><ul id="ibm-signin-minimenu-container" role="menu" aria-label="Profile" class="ibm-dropdown-menu">    <li class="ibm-dropdown-menu-primary" role="presentation" data-linktype="notifications">       <a class="" href="https://myibm.ibm.com/dashboard/?lnk=mmi" tabindex="0">我的 IBM</a>     </li>    <li class="ibm-dropdown-menu-primary menu-heading" role="presentation">       <span tabindex="0">developerWorks</span>     </li>   <li class="ibm-dropdown-menu-primary ibm-signin-alt" role="presentation">     <a href="https://www.ibm.com/developerworks/dwwi/jsp/ssologin.jsp?d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-kdb%2F&amp;lang=zh&amp;a=dwmav" role="menuitem">登录</a>   </li>   <li class="ibm-dropdown-menu-primary dw-register-alt" role="presentation">     <a href="https://www.ibm.com/developerworks/dwwi/jsp/ssoregister.jsp?d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-kdb%2F&amp;lang=zh&amp;a=dwmav" role="menuitem">注册</a>   </li></ul></li><li role="presentation" class="ibm-masthead-item-menu"><button role="button" aria-haspopup="true" aria-owns="ibm-burger-menu-container" class="ibm-menu-link">站点导航</button></li></ul></div> 
+        </nav>
+  
+        
+       
+    </div>
+</div><div class="ibm-mobilemenu ibm-hide" id="ibm-burger-menu-container" aria-labelledby="ibm-burgermenu-a11y" role="dialog" tabindex="0"><p class="ibm-hide" id="ibm-burgermenu-a11y">站点导航</p><div class="ibm-mobilemenu-close"><p class="ibm-icononly ibm-fright ibm-ind-link ibm-nospacing"><a class="ibm-close-link" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/?lnk=hm#">关闭</a></p></div><div class="ibm-mobilemenu-section ibm-mobilemenu-sitenavmenu"><ul role="menubar"><li class="ibm-mobile-section-heading ibm-mobile-sitename">
+        <a href="https://www.ibm.com/developerworks/cn/?lnk=hm">
+            <img width="186" height="24" alt="developerWorks®" src="./Linux 系统内核的调试_files/dw-mf-wordmark.svg">
+        </a>
+    </li>
+                            <li class="dw-navpage-learn" role="presentation">
+                    <a href="https://www.ibm.com/developerworks/cn/topics/?lnk=hm" role="menuitem" tabindex="0">学习</a>
+                </li>
+                    
+                <li class="dw-navpage-develop" role="presentation">
+                    <a href="https://www.ibm.com/developerworks/cn/downloads/?lnk=hm" role="menuitem" tabindex="-1">开发</a>
+                </li>                    
+
+                <li class="dw-navpage-connect" role="presentation">
+                    <a href="https://www.ibm.com/developerworks/cn/community/?lnk=hm" role="menuitem" tabindex="-1">社区</a>
+                </li>  
+        </ul></div><div class="ibm-mobilemenu-section"><ul class="ibm-mobilemenu-mhlinks" aria-label="发现 IBM"><li><a href="https://www.ibm.com/marketplace/?lnk=hmmp">市场</a></li><li><div data-widget="showhide" data-type="panel" class="ibm-show-hide ibm-widget-processed"><h2><a href="javascript:void();">产品</a></h2><div class="ibm-container-body" style="display: none;"><ul><li><a href="https://www.ibm.com/products/cn/zh/?lnk=hmhmpr_cnzh"><span>产品</span></a></li><li><a href="https://www.ibm.com/analytics/cn/zh/?lnk=hmmpr_bua_cnzh&amp;lnk2=learn"><span>大数据与分析</span></a></li><li><a href="https://www.ibm.com/cloud-computing/cn/zh?lnk=hmmpr_bucl_cnzh&amp;lnk2=learn"><span>云计算</span></a></li><li><a href="https://www.ibm.com/ibm/cn/cognitive/outthink/?lnk=hmmpr_buce_cnzh&amp;lnk2=learn"><span>认知</span></a></li><li><a href="https://www.ibm.com/watson/customer-engagement/cn-zh/?lnk=hm"><span>认知客户互动</span></a></li><li><a href="https://www.ibm.com/internet-of-things/cn-zh/?lnk=hmmpr_iot_cnzh&amp;lnk2=learn"><span>物联网</span></a></li><li><a href="https://www.ibm.com/solutions/cn/zh/index.html?lnk=hm"><span>行业解决方案</span></a></li><li><a href="https://www.ibm.com/it-infrastructure/cn-zh/?lnk=hmmpr_buit_cnzh&amp;lnk2=learn"><span>IT 基础架构</span></a></li><li><a href="https://www.ibm.com/mobilefirst/cn/zh/?lnk=hmmpr_bumf_cnzh&amp;lnk2=learn"><span>移动</span></a></li><li><a href="https://www.ibm.com/security/cn-zh/?lnk=hmmpr_buse_cnzh&amp;lnk2=learnquick"><span>IBM 安全</span></a></li><li><a href="https://www.ibm.com/social-business/cn-zh/?lnk=hm"><span>社交协作与人才管理</span></a></li><li><a href="https://www.ibm.com/services/cn/zh/watson/explorer.html?lnk=hm"><span>Watson</span></a></li></ul></div></div></li><li><div data-widget="showhide" data-type="panel" class="ibm-show-hide ibm-widget-processed"><h2><a href="javascript:void();">服务</a></h2><div class="ibm-container-body" style="display: none;"><ul><li><a href="https://www.ibm.com/services/cn-zh/digital-reinvention/case/index.html?lnk=hm"><span>业务咨询</span></a></li><li><a href="https://www.ibm.com/technologyservices/cn/zh/?lnk=hmmse_ts_cnzh&amp;lnk2=learn#technology-outsourcing"><span>技术服务</span></a></li><li><a href="https://www.ibm.com/financing/cn/zh/index.html?lnk=hmmse_fin_cnzh&amp;lnk2=learn"><span>融资</span></a></li><li><a href="https://www.ibm.com/solutions/cn/zh/index.html?lnk=hm"><span>行业解决方案</span></a></li><li><a href="https://www.ibm.com/training/?lnk=hm"><span>培训与技能 (US)</span></a></li></ul></div></div></li><li><a href="https://www.ibm.com/solutions/cn/zh/?lnk=hmmin">行业</a></li><li><div data-widget="showhide" data-type="panel" class="ibm-show-hide ibm-widget-processed"><h2><a href="javascript:void();">开发人员</a></h2><div class="ibm-container-body" style="display: none;"><ul><li><a href="https://www.ibm.com/developerworks/cn/?lnk=hmmdev_dw_cnzh&amp;lnk2=learn"><span>developerWorks</span></a></li><li><a href="https://www.ibm.com/partnerworld?lnk=hmmdev_pw_cnzh&amp;lnk2=learn"><span>PartnerWorld</span></a></li></ul></div></div></li><li><a href="https://www.ibm.com/support/cn/zh/?lnk=hmmsu_cnzh">支持</a></li><li><a href="https://www.ibm.com/employment/cn/?lnk=hmmca_cnzh">工作机会</a></li></ul></div></div><div class="ibm-mhplaceholder"></div><!-- MASTHEAD_END -->
+	    
+<!-- LAYOUT -->
+<div id="ibm-content-wrapper">
+    <!-- LEADSPACE_BEGIN -->
+    <header role="banner" aria-labelledby="ibm-pagetitle-h1">
+        
+        <!-- MASTHEAD_SITENAV_BEGIN -->
+        <div class="ibm-sitenav-menu-container" data-widgetprocessed="true">
+    <div class="ibm-sitenav-menu-name">
+        <a href="https://www.ibm.com/developerworks/cn/">
+            <img width="186" height="24" alt="developerWorks®" src="./Linux 系统内核的调试_files/dw-mf-wordmark.svg">
+        </a>
+    </div>
+    <div class="ibm-sitenav-menu-list" style="opacity: 1;">
+        <ul role="menubar">
+                            <li class="dw-navpage-learn" role="presentation">
+                    <a href="https://www.ibm.com/developerworks/cn/topics/" role="menuitem" tabindex="0">学习</a>
+                </li>
+                    
+                <li class="dw-navpage-develop" role="presentation">
+                    <a href="https://www.ibm.com/developerworks/cn/downloads/" role="menuitem" tabindex="-1">开发</a>
+                </li>                    
+
+                <li class="dw-navpage-connect" role="presentation">
+                    <a href="https://www.ibm.com/developerworks/cn/community/" role="menuitem" tabindex="-1">社区</a>
+                </li>  
+        </ul>
+    </div>
+</div>        <!-- MASTHEAD_SITENAV_END -->
+        
+        <!-- NAVIGATION_TRAIL_BEGIN -->
+        <div id="ibm-leadspace-head" class="ibm-alternate">
+            <div id="ibm-leadspace-body">
+                <nav aria-label="Breadcrumb" role="navigation">                     
+                            <ul id="dw-navigation-trail" itemscope="" itemtype="http://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem"><a itemprop="item" href="https://www.ibm.com/developerworks/cn/topics/"><span itemprop="name">学习</span></a><meta itemprop="position" content="1"></li><li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem"><a itemprop="item" href="https://www.ibm.com/developerworks/cn/linux/"><span itemprop="name">Linux</span></a><meta itemprop="position" content="2"></li></ul>
+                </nav>
+            </div>
+        </div>
+        <!-- NAVIGATION_TRAIL_END -->
+        
+    </header>
+    <!-- LEADSPACE_END -->
+    
+    <!-- MAIN_CONTENT_BEGIN -->
+    <main role="main" aria-label=""> 
+        <div id="ibm-pcon">
+            <!-- BEGIN_IBM-CONTENT -->
+            <div id="ibm-content">
+                <!-- BEGIN_IBM-CONTENT-BODY -->
+                <div id="ibm-content-body">
+                    <!-- BEGIN_IBM-CONTENT-MAIN -->
+                    <div id="ibm-content-main" class="dw-article">                        
+                        <!-- BEGIN_INTERIOR-COLUMNS -->
+                                <div class="ibm-columns dw-article-toc">
+                                    <!-- LEFT_6_2_CONTENT_COLUMN_BEGIN -->  
+                                    <div id="dw-article-toc-container" class="ibm-col-6-2">
+                                        <div id="dw-article-toc-body" data-widget="scrollable" data-height="234" style="width: 380px; height: 234px;" class="ibm-widget-processed"><div class="nano-content" tabindex="-1" style="right: -17px;">
+                                            <h2>内容</h2><div class="ibm-alternate-rule"><hr></div><ul role="directory" aria-label="内容" class="ibm-plain-list"><li class=""><a onclick="tocLink(&#39;#ibm-pagetitle-h1&#39;)" role="link" tabindex="0">概览</a></li><li class=""><a onclick="tocLink(&#39;#N10050&#39;)" role="link" tabindex="0">1.	Linux 系统内核级软件的调试技术</a></li><li class=""><a onclick="tocLink(&#39;#N10061&#39;)" role="link" tabindex="0">2.	使用KGDB构建Linux内核调试环境</a></li><li class=""><a onclick="tocLink(&#39;#N101E9&#39;)" role="link" tabindex="0">3.	使用SkyEye构建Linux内核调试环境</a></li><li><a onclick="tocLink(&#39;#N1027A&#39;)" role="link" tabindex="0">4.	使用UML调试Linux内核</a></li><li><a onclick="tocLink(&#39;#N10293&#39;)" role="link" tabindex="0">5.	内核调试配置选项</a></li><li><a onclick="tocLink(&#39;#N102C0&#39;)" role="link" tabindex="0">6.	总结</a></li><li class="dw-highlight"><a onclick="tocLink(&#39;#N102D3&#39;)" role="link" tabindex="0">参考资料</a></li><li><a onclick="tocLink(&#39;#N10315&#39;)" role="link" tabindex="0">参考文献</a></li><li><a onclick="tocLink(&#39;#icomments&#39;)" role="link" tabindex="0">评论</a></li></ul>
+                                        </div><div class="nano-pane" style="opacity: 1; visibility: visible; display: none;"><div class="nano-slider" style="height: 103px; transform: translate(0px, 0px);"></div></div></div>
+                                    </div>
+                                    <!-- LEFT_6_2_CONTENT_COLUMN_END -->
+                                    
+                                    <!-- CENTER_6_4_CONTENT_COLUMN_BEGIN -->
+                                    <div class="ibm-col-6-4">
+                                        <h1 id="ibm-pagetitle-h1" class="ibm-h1">Linux 系统内核的调试</h1>
+                                        <!-- Article Top Bar -->
+                                                <div class="ibm-columns dw-article-topbar">
+                                                    <!-- Author and article info. -->
+                                                    <div class="ibm-col-6-2 ibm-col-medium-6-4 dw-article-metadata">
+                                                        <div class="dw-article-authordate">树雷 李 和 渝 陈<br><span class="dw-article-pubdate">2005 年 12 月 18 日发布</span></div>
+                                                    </div>
+                                                    <!-- Social -->
+                                                    <div class="ibm-col-6-2 ibm-col-medium-6-4 ibm-col-small-6-2 dw-article-social">
+                                                        <!-- Sharing links -->
+                                                        <div id="dw-article-share-inline">
+                                                            <div class="dw-article-sharelink-inline">
+                                                                <div class="ibm-sharethispage"><h4 class="ibm-bold">分享此页面</h4><p class="ibm-icononly"><a class="ibm-weibo-encircled-link" href="http://service.weibo.com/share/share.php?url=http%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-kdb%2Findex.html%&amp;title=Linux%20%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E7%9A%84%E8%B0%83%E8%AF%95&amp;language=zh_cn" data-id="weibo" onclick="return IBMCore.common.module.sharethispage.gotoUrl(window.open(), this);">Weibo</a><a class="ibm-googleplus-encircled-link" href="https://plus.google.com/share?url=http%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-kdb%2Findex.html&amp;t=Linux%20%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E7%9A%84%E8%B0%83%E8%AF%95" data-id="googleplus" onclick="return IBMCore.common.module.sharethispage.gotoUrl(window.open(), this);">Google+</a><a class="ibm-email-encircled-link" href="mailto:?subject=Linux%20%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E7%9A%84%E8%B0%83%E8%AF%95&amp;body=http%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-kdb%2Findex.html" data-id="email" onclick="">用电子邮件发送本页面</a></p></div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Number of comments and link to comments -->
+                                                        <div id="dw-article-cmts">
+                                                            <div class="dw-article-cmtslink">
+                                                                <a onclick="tocLink(&#39;#icomments&#39;)" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#icomments" role="link" tabindex="0" aria-label="Comments">
+                                                                    <img src="./Linux 系统内核的调试_files/dw-article-cmt-icon.png" width="29" height="29" alt="Comments">
+                                                                </a>
+                                                            </div>
+                                                            <div class="dw-article-cmtslink">
+                                                                <a onclick="tocLink(&#39;#icomments&#39;)" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#icomments" role="link" tabindex="0">
+                                                                    <div id="nCmts">1</div>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                        <!-- Article Body -->
+                                        
+                                        <p>调试是软件开发过程中一个必不可少的环节，在 Linux 内核开发的过程中也不可避免地会面对如何调试内核的问题。但是，Linux 系统的开发者出于保证内核代码正确性的考虑，不愿意在 Linux 内核源代码树中加入一个调试器。他们认为内核中的调试器会误导开发者，从而引入不良的修正[1]。所以对 Linux 内核进行调试一直是个令内核程序员感到棘手的问题，调试工作的艰苦性是内核级的开发区别于用户级开发的一个显著特点。 </p><p>尽管缺乏一种内置的调试内核的有效方法，但是 Linux 系统在内核发展的过程中也逐渐形成了一些监视内核代码和错误跟踪的技术。同时，许多的补丁程序应运而生，它们为标准内核附加了内核调试的支持。尽管这些补丁有些并不被 Linux 官方组织认可，但他们确实功能完善，十分强大。调试内核问题时，利用这些工具与方法跟踪内核执行情况，并查看其内存和数据结构将是非常有用的。</p><p>本文将首先介绍 Linux 内核上的一些内核代码监视和错误跟踪技术，这些调试和跟踪方法因所要求的使用环境和使用方法而各有不同，然后重点介绍三种 Linux 内核的源代码级的调试方法。</p><h2 id="N10050" class="ibm-h2">1.	Linux 系统内核级软件的调试技术</h2><p>printk() 是调试内核代码时最常用的一种技术。在内核代码中的特定位置加入printk() 调试调用，可以直接把所关心的信息打打印到屏幕上，从而可以观察程序的执行路径和所关心的变量、指针等信息。 Linux 内核调试器（Linux kernel debugger，kdb）是 Linux 内核的补丁，它提供了一种在系统能运行时对内核内存和数据结构进行检查的办法。Oops、KDB在文章掌握 <a href="https://www.ibm.com/developerworks/cn/linux/l-kdbug/index.html">Linux 调试技术</a>有详细介绍，大家可以参考。 Kprobes 提供了一个强行进入任何内核例程，并从中断处理器无干扰地收集信息的接口。使用 Kprobes 可以轻松地收集处理器寄存器和全局数据结构等调试信息，而无需对Linux内核频繁编译和启动，具体使用方法，请参考<a href="https://www.ibm.com/developerworks/cn/linux/l-kprobes.html">使用 Kprobes 调试内核</a>。</p><p>以上介绍了进行Linux内核调试和跟踪时的常用技术和方法。当然，内核调试与跟踪的方法还不止以上提到的这些。这些调试技术的一个共同的特点在于，他们都不能提供源代码级的有效的内核调试手段，有些只能称之为错误跟踪技术，因此这些方法都只能提供有限的调试能力。下面将介绍三种实用的源代码级的内核调试方法。</p><h2 id="N10061" class="ibm-h2">2.	使用KGDB构建Linux内核调试环境</h2><p>kgdb提供了一种使用 gdb调试 Linux 内核的机制。使用KGDB可以象调试普通的应用程序那样，在内核中进行设置断点、检查变量值、单步跟踪程序运行等操作。使用KGDB调试时需要两台机器，一台作为开发机（Development Machine）,另一台作为目标机（Target Machine），两台机器之间通过串口或者以太网口相连。串口连接线是一根RS-232接口的电缆，在其内部两端的第2脚（TXD）与第3脚（RXD）交叉相连，第7脚（接地脚）直接相连。调试过程中，被调试的内核运行在目标机上，gdb调试器运行在开发机上。</p><p>目前，kgdb发布支持i386、x86_64、32-bit PPC、SPARC等几种体系结构的调试器。有关kgdb补丁的下载地址见参考资料[4]。</p><h3 id="N1006A" class="ibm-h3">2．1 kgdb的调试原理</h3><p>安装kgdb调试环境需要为Linux内核应用kgdb补丁，补丁实现的gdb远程调试所需要的功能包括命令处理、陷阱处理及串口通讯3个主要的部分。kgdb补丁的主要作用是在Linux内核中添加了一个调试Stub。调试Stub是Linux内核中的一小段代码，提供了运行gdb的开发机和所调试内核之间的一个媒介。gdb和调试stub之间通过gdb串行协议进行通讯。gdb串行协议是一种基于消息的ASCII码协议，包含了各种调试命令。当设置断点时，kgdb负责在设置断点的指令前增加一条trap指令，当执行到断点时控制权就转移到调试stub中去。此时，调试stub的任务就是使用远程串行通信协议将当前环境传送给gdb，然后从gdb处接受命令。gdb命令告诉stub下一步该做什么，当stub收到继续执行的命令时，将恢复程序的运行环境，把对CPU的控制权重新交还给内核。</p><h5 id="N10072" class="ibm-h5"><img src="./Linux 系统内核的调试_files/image001.gif" class="ibm-downsize" alt="" height="224" width="450"><p class="ibm-ind-link ibm-hide"><a class="ibm-popup-link" onclick="IBMCore.common.widget.overlay.show(&#39;N10076&#39;);return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#N10076">点击查看大图</a></p></h5><h3 id="N1007C" class="ibm-h3">2．2 Kgdb的安装与设置</h3><p>下面我们将以Linux 2.6.7内核为例详细介绍kgdb调试环境的建立过程。</p><p><strong>2.2.1软硬件准备</strong></p><p>以下软硬件配置取自笔者进行试验的系统配置情况：</p><h5 id="N10089" class="ibm-h5"><img src="./Linux 系统内核的调试_files/table1.gif" class="ibm-downsize" alt="" height="215" width="589"><p class="ibm-ind-link ibm-hide"><a class="ibm-popup-link" onclick="IBMCore.common.widget.overlay.show(&#39;N1008D&#39;);return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#N1008D">点击查看大图</a></p><p>kgdb补丁的版本遵循如下命名模式：Linux-A-kgdb-B，其中A表示Linux的内核版本号，B为kgdb的版本号。以试验使用的kgdb补丁为例，linux内核的版本为linux-2.6.7，补丁版本为kgdb-2.2。</p><p>物理连接好串口线后，使用以下命令来测试两台机器之间串口连接情况，stty命令可以对串口参数进行设置：</p><p>在development机上执行：</p></h5><h5 id="N1009B" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_443256" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">stty ispeed 115200 ospeed 115200 -F /dev/ttyS0</code></div></div></td></tr></tbody></table></div></div></div></span><p>在target机上执行：</p></h5><h5 id="N100A4" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_814386" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">stty ispeed 115200 ospeed 115200 -F /dev/ttyS0</code></div></div></td></tr></tbody></table></div></div></div></span><p>在developement机上执行：</p></h5><h5 id="N100AD" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_725074" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">echo hello &gt; /dev/ttyS0</code></div></div></td></tr></tbody></table></div></div></div></span><p>在target机上执行：</p></h5><h5 id="N100B6" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_227567" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">cat /dev/ttyS0</code></div></div></td></tr></tbody></table></div></div></div></span><p>如果串口连接没问题的话在将在target机的屏幕上显示"hello"。</p><p><strong>2．2．2 安装与配置</strong></p><p>下面我们需要应用kgdb补丁到Linux内核，设置内核选项并编译内核。这方面的资料相对较少，笔者这里给出详细的介绍。下面的工作在开发机（developement）上进行，以上面介绍的试验环境为例，某些具体步骤在实际的环境中可能要做适当的改动：</p><p>I、内核的配置与编译</p></h5><h5 id="N100C6" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_236220" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]# tar -jxvf linux-2.6.7.tar.bz2</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl tmp]#tar -jxvf linux-2.6.7-kgdb-2.2.tar.tar</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">[root@lisl tmp]#cd inux-2.6.7</code></div></div></td></tr></tbody></table></div></div></div></span><p>请参照目录补丁包中文件README给出的说明，执行对应体系结构的补丁程序。由于试验在i386体系结构上完成，所以只需要安装一下补丁：core-lite.patch、i386-lite.patch、8250.patch、eth.patch、core.patch、i386.patch。应用补丁文件时，请遵循kgdb软件包内series文件所指定的顺序，否则可能会带来预想不到的问题。eth.patch文件是选择以太网口作为调试的连接端口时需要运用的补丁</p><p>。
+</p><p>应用补丁的命令如下所示：</p></h5><h5 id="N100D3" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_259798" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]#patch -p1 &lt;../linux-2.6.7-kgdb-2.2/core-lite.patch</code></div></div></td></tr></tbody></table></div></div></div></span><p>如果内核正确，那么应用补丁时应该不会出现任何问题（不会产生*.rej文件）。为Linux内核添加了补丁之后，需要进行内核的配置。内核的配置可以按照你的习惯选择配置Linux内核的任意一种方式。</p></h5><h5 id="N100DC" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_525893" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]#make menuconfig</code></div></div></td></tr></tbody></table></div></div></div></span><p>在内核配置菜单的Kernel hacking选项中选择kgdb调试项，例如：</p></h5><h5 id="N100E5" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_656135" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript spaces">&nbsp;&nbsp;</code><code class="htmlscript plain">[*] KGDB: kernel debugging with remote gdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="htmlscript plain">Method for KGDB communication (KGDB: On generic serial port (8250))&nbsp; ---&gt;&nbsp; </code></div><div class="line number3 index2 alt2"><code class="htmlscript spaces">&nbsp;&nbsp;</code><code class="htmlscript plain">[*] KGDB: Thread analysis </code></div><div class="line number4 index3 alt1"><code class="htmlscript spaces">&nbsp;&nbsp;</code><code class="htmlscript plain">[*] KGDB: Console messages through gdb</code></div><div class="line number5 index4 alt2"><code class="htmlscript plain">[root@lisl tmp]#make</code></div></div></td></tr></tbody></table></div></div></div></span><p>编译内核之前请注意Linux目录下Makefile中的优化选项，默认的Linux内核的编译都以-O2的优化级别进行。在这个优化级别之下，编译器要对内核中的某些代码的执行顺序进行改动，所以在调试时会出现程序运行与代码顺序不一致的情况。可以把Makefile中的-O2选项改为-O,但不可去掉-O，否则编译会出问题。为了使编译后的内核带有调试信息，注意在编译内核的时候需要加上-g选项。</p><p>不过，当选择"Kernel debugging-&gt;Compile the kernel with debug info"选项后配置系统将自动打开调试选项。另外，选择"kernel debugging with remote gdb"后，配置系统将自动打开"Compile the kernel with debug info"选项。</p><p>内核编译完成后，使用scp命令进行将相关文件拷贝到target机上(当然也可以使用其它的网络工具，如rcp)。</p></h5><h5 id="N100F2" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_398752" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]#scp arch/i386/boot/bzImage root@192.168.6.13:/boot/vmlinuz-2.6.7-kgdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl tmp]#scp System.map root@192.168.6.13:/boot/System.map-2.6.7-kgdb</code></div></div></td></tr></tbody></table></div></div></div></span><p>如果系统启动使所需要的某些设备驱动没有编译进内核的情况下，那么还需要执行如下操作：</p></h5><h5 id="N100FB" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_565253" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]#mkinitrd /boot/initrd-2.6.7-kgdb 2.6.7</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl tmp]#scp initrd-2.6.7-kgdb root@192.168.6.13:/boot/ initrd-2.6.7-kgdb</code></div></div></td></tr></tbody></table></div></div></div></span><p>II、kgdb的启动</p><p>在将编译出的内核拷贝的到target机器之后，需要配置系统引导程序，加入内核的启动选项。以下是kgdb内核引导参数的说明：</p></h5><h5 id="N10105" class="ibm-h5"><img src="./Linux 系统内核的调试_files/table2.gif" class="ibm-downsize" alt="" height="309" width="584"><p class="ibm-ind-link ibm-hide"><a class="ibm-popup-link" onclick="IBMCore.common.widget.overlay.show(&#39;N10109&#39;);return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#N10109">点击查看大图</a></p><p>如表中所述，在kgdb 2.0版本之后内核的引导参数已经与以前的版本有所不同。使用grub引导程序时，直接将kgdb参数作为内核vmlinuz的引导参数。下面给出引导器的配置示例。</p></h5><h5 id="N10113" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_798142" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">title 2.6.7 kgdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">root (hd0,0)</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">kernel /boot/vmlinuz-2.6.7-kgdb ro root=/dev/hda1 kgdbwait kgdb8250=1,115200</code></div></div></td></tr></tbody></table></div></div></div></span><p>在使用lilo作为引导程序时，需要把kgdb参放在由append修饰的语句中。下面给出使用lilo作为引导器时的配置示例。</p></h5><h5 id="N1011C" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_55747" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">image=/boot/vmlinuz-2.6.7-kgdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">label=kgdb</code></div><div class="line number3 index2 alt2"><code class="htmlscript spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="htmlscript plain">read-only</code></div><div class="line number4 index3 alt1"><code class="htmlscript spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="htmlscript plain">root=/dev/hda3</code></div><div class="line number5 index4 alt2"><code class="htmlscript plain">append="gdb gdbttyS=1 gdbbaud=115200"</code></div></div></td></tr></tbody></table></div></div></div></span><p>保存好以上配置后重新启动计算机，选择启动带调试信息的内核，内核将在短暂的运行后在创建init内核线程之前停下来，打印出以下信息，并等待开发机的连接。</p><p>Waiting for connection from remote gdb...</p><p>在开发机上执行：</p></h5><h5 id="N10129" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_549275" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">gdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">file vmlinux</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">set remotebaud 115200</code></div><div class="line number4 index3 alt1"><code class="htmlscript plain">target remote /dev/ttyS0</code></div></div></td></tr></tbody></table></div></div></div></span><p>其中vmlinux是指向源代码目录下编译出来的Linux内核文件的链接，它是没有经过压缩的内核文件，gdb程序从该文件中得到各种符号地址信息。</p><p>这样，就与目标机上的kgdb调试接口建立了联系。一旦建立联接之后，对Linux内的调试工作与对普通的运用程序的调试就没有什么区别了。任何时候都可以通过键入ctrl+c打断目标机的执行，进行具体的调试工作。</p><p>在kgdb 2.0之前的版本中，编译内核后在arch/i386/kernel目录下还会生成可执行文件gdbstart。将该文件拷贝到target机器的/boot目录下，此时无需更改内核的启动配置文件，直接使用命令：</p></h5><h5 id="N10136" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_603087" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl boot]#gdbstart -s 115200 -t /dev/ttyS0</code></div></div></td></tr></tbody></table></div></div></div></span><p>可以在KGDB内核引导启动完成后建立开发机与目标机之间的调试联系。</p><p><strong>2．2．3 通过网络接口进行调试</strong></p><p>kgdb也支持使用以太网接口作为调试器的连接端口。在对Linux内核应用补丁包时，需应用eth.patch补丁文件。配置内核时在Kernel hacking中选择kgdb调试项，配置kgdb调试端口为以太网接口，例如：</p></h5><h5 id="N10144" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_34294" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[*]KGDB: kernel debugging with remote gdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">Method for KGDB communication (KGDB: On ethernet)&nbsp; ---&gt; </code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">( ) KGDB: On generic serial port (8250)</code></div><div class="line number4 index3 alt1"><code class="htmlscript plain">(X) KGDB: On ethernet</code></div></div></td></tr></tbody></table></div></div></div></span><p>另外使用eth0网口作为调试端口时，grub.list的配置如下：</p></h5><h5 id="N1014D" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_358085" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">title 2.6.7 kgdb</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">root (hd0,0)</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">kernel /boot/vmlinuz-2.6.7-kgdb ro root=/dev/hda1 kgdbwait kgdboe=@192.168.</code></div><div class="line number4 index3 alt1"><code class="htmlscript plain">5.13/,@192.168. 6.13/</code></div></div></td></tr></tbody></table></div></div></div></span><p>其他的过程与使用串口作为连接端口时的设置过程相同。</p><p>注意：尽管可以使用以太网口作为kgdb的调试端口，使用串口作为连接端口更加简单易行，kgdb项目组推荐使用串口作为调试端口。</p><p><strong>2．2．4 模块的调试方法</strong></p><p>内核可加载模块的调试具有其特殊性。由于内核模块中各段的地址是在模块加载进内核的时候才最终确定的，所以develop机的gdb无法得到各种符号地址信息。所以，使用kgdb调试模块所需要解决的一个问题是，需要通过某种方法获得可加载模块的最终加载地址信息，并把这些信息加入到gdb环境中。</p><p>I、在Linux 2.4内核中的内核模块调试方法</p><p>在Linux2.4.x内核中，可以使用insmod -m命令输出模块的加载信息，例如：</p></h5><h5 id="N10161" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_188788" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]# insmod -m hello.ko &gt;modaddr</code></div></div></td></tr></tbody></table></div></div></div></span><p>查看模块加载信息文件modaddr如下：</p></h5><h5 id="N1016A" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_173855" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">.this&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000060&nbsp; c88d8000&nbsp; 2**2</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">.text&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000035&nbsp; c88d8060&nbsp; 2**2</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">.rodata&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000069&nbsp; c88d80a0&nbsp; 2**5</code></div><div class="line number4 index3 alt1"><code class="htmlscript plain">……</code></div><div class="line number5 index4 alt2"><code class="htmlscript plain">.data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000000&nbsp; c88d833c&nbsp; 2**2</code></div><div class="line number6 index5 alt1"><code class="htmlscript plain">.bss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00000000&nbsp; c88d833c&nbsp; 2**2</code></div><div class="line number7 index6 alt2"><code class="htmlscript plain">……</code></div></div></td></tr></tbody></table></div></div></div></span><p>在这些信息中，我们关心的只有4个段的地址:.text、.rodata、.data、.bss。在development机上将以上地址信息加入到gdb中,这样就可以进行模块功能的测试了。</p></h5><h5 id="N10173" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_626928" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">(gdb) Add-symbol-file hello.o 0xc88d8060 -s .data 0xc88d80a0 -s </code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">.rodata 0xc88d80a0 -s .bss 0x c88d833c</code></div></div></td></tr></tbody></table></div></div></div></span><p>这种方法也存在一定的不足，它不能调试模块初始化的代码，因为此时模块初始化代码已经执行过了。而如果不执行模块的加载又无法获得模块插入地址，更不可能在模块初始化之前设置断点了。对于这种调试要求可以采用以下替代方法。</p><p>在target机上用上述方法得到模块加载的地址信息，然后再用rmmod卸载模块。在development机上将得到的模块地址信息导入到gdb环境中，在内核代码的调用初始化代码之前设置断点。这样，在target机上再次插入模块时，代码将在执行模块初始化之前停下来，这样就可以使用gdb命令调试模块初始化代码了。</p><p>另外一种调试模块初始化函数的方法是：当插入内核模块时，内核模块机制将调用函数sys_init_module(kernel/modle.c)执行对内核模块的初始化，该函数将调用所插入模块的初始化函数。程序代码片断如下：</p></h5><h5 id="N10180" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_407058" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">……&nbsp; ……</code></div><div class="line number2 index1 alt1"><code class="htmlscript spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="htmlscript plain">if (mod-&gt;init != NULL)</code></div><div class="line number3 index2 alt2"><code class="htmlscript spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="htmlscript plain">ret = mod-&gt;init();</code></div><div class="line number4 index3 alt1"><code class="htmlscript plain">……&nbsp; ……</code></div></div></td></tr></tbody></table></div></div></div></span><p>在该语句上设置断点，也能在执行模块初始化之前停下来。</p><p>II、在Linux 2.6.x内核中的内核模块调试方法</p><p>Linux 2.6之后的内核中，由于module-init-tools工具的更改，insmod命令不再支持-m参数，只有采取其他的方法来获取模块加载到内核的地址。通过分析ELF文件格式，我们知道程序中各段的意义如下：</p><p>.text（代码段）：用来存放可执行文件的操作指令，也就是说是它是可执行程序在内存种的镜像。</p><p>.data（数据段）：数据段用来存放可执行文件中已初始化全局变量，也就是存放程序静态分配的变量和全局变量。</p><p>.bss（BSS段）：BSS段包含了程序中未初始化全局变量，在内存中 bss段全部置零。</p><p>.rodata（只读段）：该段保存着只读数据，在进程映象中构造不可写的段。</p><p>通过在模块初始化函数中放置一下代码，我们可以很容易地获得模块加载到内存中的地址。</p></h5><h5 id="N10197" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_442930" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">……</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">int bss_var;</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">static int hello_init(void)</code></div><div class="line number4 index3 alt1"><code class="htmlscript plain">{</code></div><div class="line number5 index4 alt2"><code class="htmlscript plain">printk(KERN_ALERT "Text location .text(Code Segment):%p\n",hello_init);</code></div><div class="line number6 index5 alt1"><code class="htmlscript plain">static int data_var=0;</code></div><div class="line number7 index6 alt2"><code class="htmlscript plain">printk(KERN_ALERT "Data Location .data(Data Segment):%p\n",&amp;data_var);</code></div><div class="line number8 index7 alt1"><code class="htmlscript plain">printk(KERN_ALERT "BSS Location: .bss(BSS Segment):%p\n",&amp;bss_var);</code></div><div class="line number9 index8 alt2"><code class="htmlscript plain">……</code></div><div class="line number10 index9 alt1"><code class="htmlscript plain">}</code></div><div class="line number11 index10 alt2"><code class="htmlscript plain">Module_init(hello_init);</code></div></div></td></tr></tbody></table></div></div></div></span><p>这里，通过在模块的初始化函数中添加一段简单的程序，使模块在加载时打印出在内核中的加载地址。.rodata段的地址可以通过执行命令readelf -e hello.ko，取得.rodata在文件中的偏移量并加上段的align值得出。</p><p>为了使读者能够更好地进行模块的调试，kgdb项目还发布了一些脚本程序能够自动探测模块的插入并自动更新gdb中模块的符号信息。这些脚本程序的工作原理与前面解释的工作过程相似，更多的信息请阅读参考资料[4]。</p><p><strong>2．2．5 硬件断点</strong></p><p>kgdb提供对硬件调试寄存器的支持。在kgdb中可以设置三种硬件断点：执行断点（Execution Breakpoint）、写断点（Write Breakpoint）、访问断点（Access Breakpoint）但不支持I/O访问的断点。
+目前，kgdb对硬件断点的支持是通过宏来实现的，最多可以设置4个硬件断点，这些宏的用法如下：</p></h5><h5 id="N101A6" class="ibm-h5"><img src="./Linux 系统内核的调试_files/table3.gif" class="ibm-downsize" alt="" height="222" width="513"><p class="ibm-ind-link ibm-hide"><a class="ibm-popup-link" onclick="IBMCore.common.widget.overlay.show(&#39;N101AA&#39;);return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#N101AA">点击查看大图</a></p><p>在有些情况下，硬件断点的使用对于内核的调试是非常方便的。有关硬件断点的定义和具体的使用说明见参考资料[4]</p><p>。
+</p></h5><h3 id="N101B4" class="ibm-h3">2．3．在VMware中搭建调试环境</h3><p>kgdb调试环境需要使用两台微机分别充当development机和target机，使用VMware后我们只使用一台计算机就可以顺利完成kgdb调试环境的搭建。以windows下的环境为例，创建两台虚拟机，一台作为开发机，一台作为目标机。</p><p><strong>2．3．1虚拟机之间的串口连接</strong></p><p>虚拟机中的串口连接可以采用两种方法。一种是指定虚拟机的串口连接到实际的COM上，例如开发机连接到COM1，目标机连接到COM2，然后把两个串口通过串口线相连接。另一种更为简便的方法是：在较高一些版本的VMware中都支持把串口映射到命名管道，把两个虚拟机的串口映射到同一个命名管道。例如，在两个虚拟机中都选定同一个命名管道
+\\.\pipe\com_1,指定target机的COM口为server端，并选择"The other end is a virtual machine"属性；指定development机的COM口端为client端，同样指定COM口的"The other end is a virtual machine"属性。对于IO mode属性，在target上选中"Yield CPU on poll"复选择框，development机不选。这样，可以无需附加任何硬件，利用虚拟机就可以搭建kgdb调试环境。
+即降低了使用kgdb进行调试的硬件要求，也简化了建立调试环境的过程。</p><h5 id="N101C1" class="ibm-h5"><img src="./Linux 系统内核的调试_files/image002.jpg" class="ibm-downsize" alt="" height="424" width="600"><p class="ibm-ind-link ibm-hide"><a class="ibm-popup-link" onclick="IBMCore.common.widget.overlay.show(&#39;N101C5&#39;);return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#N101C5">点击查看大图</a></p><p><strong>2．3．2 VMware的使用技巧</strong></p><p>VMware虚拟机是比较占用资源的，尤其是象上面那样在Windows中使用两台虚拟机。因此，最好为系统配备512M以上的内存，每台虚拟机至少分配128M的内存。这样的硬件要求，对目前主流配置的PC而言并不是过高的要求。出于系统性能的考虑，在VMware中尽量使用字符界面进行调试工作。同时，Linux系统默认情况下开启了sshd服务，建议使用SecureCRT登陆到Linux进行操作，这样可以有较好的用户使用界面。</p><p><strong>2．3．3 在Linux下的虚拟机中使用kgdb</strong></p><p>对于在Linux下面使用VMware虚拟机的情况，笔者没有做过实际的探索。从原理上而言，只需要在Linux下只要创建一台虚拟机作为target机，开发机的工作可以在实际的Linux环境中进行，搭建调试环境的过程与上面所述的过程类似。由于只需要创建一台虚拟机，所以使用Linux下的虚拟机搭建kgdb调试环境对系统性能的要求较低。（vmware已经推出了Linux下的版本）还可以在development机上配合使用一些其他的调试工具，例如功能更强大的cgdb、图形界面的DDD调试器等，以方便内核的调试工作。</p></h5><h5 id="N101D6" class="ibm-h5"><img src="./Linux 系统内核的调试_files/image004.jpg" class="ibm-downsize" alt="" height="463" width="527"><p class="ibm-ind-link ibm-hide"><a class="ibm-popup-link" onclick="IBMCore.common.widget.overlay.show(&#39;N101DA&#39;);return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#N101DA">点击查看大图</a></p></h5><h3 id="N101E0" class="ibm-h3">2．4 kgdb的一些特点和不足</h3><p>使用kgdb作为内核调试环境最大的不足在于对kgdb硬件环境的要求较高，必须使用两台计算机分别作为target和development机。尽管使用虚拟机的方法可以只用一台PC即能搭建调试环境，但是对系统其他方面的性能也提出了一定的要求，同时也增加了搭建调试环境时复杂程度。另外，kgdb内核的编译、配置也比较复杂，需要一定的技巧，笔者当时做的时候也是费了很多周折。当调试过程结束后时，还需要重新制作所要发布的内核。使用kgdb并不能进行全程调试，也就是说kgdb并不能用于调试系统一开始的初始化引导过程。</p><p>不过，kgdb是一个不错的内核调试工具，使用它可以进行对内核的全面调试，甚至可以调试内核的中断处理程序。如果在一些图形化的开发工具的帮助下，对内核的调试将更方便。</p><h2 id="N101E9" class="ibm-h2">3.	使用SkyEye构建Linux内核调试环境</h2><p>SkyEye是一个开源软件项目（OPenSource Software）,SkyEye项目的目标是在通用的Linux和Windows平台上模拟常见的嵌入式计算机系统。SkyEye实现了一个指令级的硬件模拟平台，可以模拟多种嵌入式开发板，支持多种CPU指令集。SkyEye 的核心是 GNU 的 gdb 项目，它把gdb和 ARM Simulator很好地结合在了一起。加入ARMulator 的功能之后，它就可以来仿真嵌入式开发板，在它上面不仅可以调试硬件驱动，还可以调试操作系统。Skyeye项目目前已经在嵌入式系统开发领域得到了很大的推广。</p><h3 id="N101F0" class="ibm-h3">3．1 SkyEye的安装和μcLinux内核编译</h3><p><strong>3．1.1 SkyEye的安装</strong></p><p>SkyEye的安装不是本文要介绍的重点，目前已经有大量的资料对此进行了介绍。有关SkyEye的安装与使用的内容请查阅参考资料[11]。由于skyeye面目主要用于嵌入式系统领域，所以在skyeye上经常使用的是μcLinux系统，当然使用Linux作为skyeye上运行的系统也是可以的。由于介绍μcLinux 2.6在skyeye上编译的相关资料并不多，所以下面进行详细介绍。</p><p><strong>3．1.2 μcLinux 2.6.x的编译</strong></p><p>要在SkyEye中调试操作系统内核，首先必须使被调试内核能在SkyEye所模拟的开发板上正确运行。因此，正确编译待调试操作系统内核并配置SkyEye是进行内核调试的第一步。下面我们以SkyEye模拟基于Atmel AT91X40的开发板，并运行μcLinux 2.6为例介绍SkyEye的具体调试方法。</p><p>I、安装交叉编译环境</p><p>先安装交叉编译器。尽管在一些资料中说明使用工具链arm-elf-tools-20040427.sh ,但是由于arm-elf-xxx与arm-linux-xxx对宏及链接处理的不同，经验证明使用arm-elf-xxx工具链在链接vmlinux的最后阶段将会出错。所以这里我们使用的交叉编译工具链是：arm-uclinux-tools-base-gcc3.4.0-20040713.sh，关于该交叉编译工具链的下载地址请参见[6]。注意以下步骤最好用root用户来执行。</p><h5 id="N10205" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_678782" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]#chmod +x&nbsp; arm-uclinux-tools-base-gcc3.4.0-20040713.sh</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl tmp]#./arm-uclinux-tools-base-gcc3.4.0-20040713.sh</code></div></div></td></tr></tbody></table></div></div></div></span><p>安装交叉编译工具链之后，请确保工具链安装路径存在于系统PATH变量中。</p><p>II、制作μcLinux内核</p><p>得到μcLinux发布包的一个最容易的方法是直接访问uClinux.org站点[7]。该站点发布的内核版本可能不是最新的，但你能找到一个最新的μcLinux补丁以及找一个对应的Linux内核版本来制作一个最新的μcLinux内核。这里，将使用这种方法来制作最新的μcLinux内核。目前（笔者记录编写此文章时），所能得到的发布包的最新版本是uClinux-dist.20041215.tar.gz。</p><p>下载uClinux-dist.20041215.tar.gz，文件的下载地址请参见[7]。</p><p>下载linux-2.6.9-hsc0.patch.gz，文件的下载地址请参见[8]。</p><p>下载linux-2.6.9.tar.bz2，文件的下载地址请参见[9]。</p><p>现在我们得到了整个的linux-2.6.9源代码，以及所需的内核补丁。请准备一个有2GB空间的目录里来完成以下制作μcLinux内核的过程。</p></h5><h5 id="N1021A" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_527154" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl tmp]# tar -jxvf uClinux-dist-20041215.tar.bz2</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl uClinux-dist]# tar -jxvf&nbsp; linux-2.6.9.tar.bz2</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">[root@lisl uClinux-dist]# gzip -dc linux-2.6.9-hsc0.patch.gz | patch -p0</code></div></div></td></tr></tbody></table></div></div></div></span><p>或者使用：</p></h5><h5 id="N10223" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_750035" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl uClinux-dist]# gunzip linux-2.6.9-hsc0.patch.gz </code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl uClinux-dist]patch -p0 &lt; linux-2.6.9-hsc0.patch</code></div></div></td></tr></tbody></table></div></div></div></span><p>执行以上过程后，将在linux-2.6.9/arch目录下生成一个补丁目录－armnommu。删除原来μcLinux目录里的linux-2.6.x(即那个linux-2.6.9-uc0)，并将我们打好补丁的Linux内核目录更名为linux-2.6.x。</p></h5><h5 id="N1022C" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_365251" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl uClinux-dist]# rm -rf linux-2.6.x/</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl uClinux-dist]# mv linux-2.6.9 linux-2.6.x</code></div></div></td></tr></tbody></table></div></div></div></span><p>III、配置和编译μcLinux内核</p><p>因为只是出于调试μcLinux内核的目的，这里没有生成uClibc库文件及romfs.img文件。在发布μcLinux时，已经预置了某些常用嵌入式开发板的配置文件，因此这里直接使用这些配置文件，过程如下：</p></h5><h5 id="N10237" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_95276" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl uClinux-dist]# cd linux-2.6.x</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">[root@lisl linux-2.6.x]#make ARCH=armnommu CROSS_COMPILE=arm-uclinux- atmel_</code></div><div class="line number3 index2 alt2"><code class="htmlscript plain">deconfig</code></div></div></td></tr></tbody></table></div></div></div></span><p>atmel_deconfig文件是μcLinux发布时提供的一个配置文件，存放于目录linux-2.6.x /arch/armnommu/configs/中。</p></h5><h5 id="N10240" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_570877" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl linux-2.6.x]#make ARCH=armnommu CROSS_COMPILE=arm-uclinux-</code></div><div class="line number2 index1 alt1"><code class="htmlscript plain">oldconfig</code></div></div></td></tr></tbody></table></div></div></div></span><p>下面编译配置好的内核：</p></h5><h5 id="N10249" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_5705" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">[root@lisl linux-2.6.x]# make ARCH=armnommu CROSS_COMPILE=arm-uclinux- v=1</code></div></div></td></tr></tbody></table></div></div></div></span><p>一般情况下，编译将顺利结束并在Linux-2.6.x/目录下生成未经压缩的μcLinux内核文件vmlinux。需要注意的是为了调试μcLinux内核，需要打开内核编译的调试选项-g，使编译后的内核带有调试信息。打开编译选项的方法可以选择：</p><p>"Kernel debugging-&gt;Compile the kernel with debug info"后将自动打开调试选项。也可以直接修改linux-2.6.x目录下的Makefile文件，为其打开调试开关。方法如下：。</p></h5><h5 id="N10254" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_411632" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">CFLAGS&nbsp; += -g</code></div></div></td></tr></tbody></table></div></div></div></span><p>最容易出现的问题是找不到arm-uclinux-gcc命令的错误，主要原因是PATH变量中没有
+包含arm-uclinux-gcc命令所在目录。在arm-linux-gcc的缺省安装情况下，它的安装目录是/root/bin/arm-linux-tool/，使用以下命令将路径加到PATH环境变量中。</p></h5><h5 id="N1025D" class="ibm-h5"><span class="dw-code-nohighlight"><div class="ibm-syntax-container"><div><div id="highlighter_828297" class="syntaxhighlighter  htmlscript"><table border="0" cellpadding="0" cellspacing="0" role="none"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="htmlscript plain">Export PATH＝$PATH:/root/bin/arm-linux-tool/bin</code></div></div></td></tr></tbody></table></div></div></div></span><p>IV、根文件系统的制作</p><p>Linux内核在启动的时的最后操作之一是加载根文件系统。根文件系统中存放了嵌入式
+系统使用的所有应用程序、库文件及其他一些需要用到的服务。出于文章篇幅的考虑，这里不打算介绍根文件系统的制作方法，读者可以查阅一些其他的相关资料。值得注意的是，由配置文件skyeye.conf指定了装载到内核中的根文件系统。</p></h5><h3 id="N10266" class="ibm-h3">3．2 使用SkyEye调试</h3><p>编译完μcLinux内核后，就可以在SkyEye中调试该ELF执行文件格式的内核了。前面已经说过利用SkyEye调试内核与使用gdb调试运用程序的方法相同。</p><p>需要提醒读者的是，SkyEye的配置文件－skyeye.conf记录了模拟的硬件配置和模拟执行行为。该配置文件是SkyEye系统中一个及其重要的文件，很多错误和异常情况的发生都和该文件有关。在安装配置SkyEye出错时，请首先检查该配置文件然后再进行其他的工作。此时，所有的准备工作已经完成，就可以进行内核的调试工作了。</p><h3 id="N1026F" class="ibm-h3">3．3使用SkyEye调试内核的特点和不足</h3><p>在SkyEye中可以进行对Linux系统内核的全程调试。由于SkyEye目前主要支持基于ARM内核的CPU，因此一般而言需要使用交叉编译工具编译待调试的Linux系统内核。另外，制作SkyEye中使用的内核编译、配置过程比较复杂、繁琐。不过，当调试过程结束后无需重新制作所要发布的内核。</p><p>SkyEye只是对系统硬件进行了一定程度上的模拟，所以在SkyEye与真实硬件环境相比较而言还是有一定的差距，这对一些与硬件紧密相关的调试可能会有一定的影响，例如驱动程序的调试。不过对于大部分软件的调试，SkyEye已经提供了精度足够的模拟了。</p><p>SkyEye的下一个目标是和eclipse结合，有了图形界面，能为调试和查看源码提供一些方便。</p><h2 id="N1027A" class="ibm-h2">4.	使用UML调试Linux内核</h2><p>User-mode Linux（UML）简单说来就是在Linux内运行的Linux。该项目是使Linux内核成为一个运行在 Linux 系统之上单独的、用户空间的进程。UML并不是运行在某种新的硬件体系结构之上，而是运行在基于 Linux 系统调用接口所实现的虚拟机。正是由于UML是一个将Linux作为用户空间进程运行的特性，可以使用UML来进行操作系统内核的调试。有关UML的介绍请查阅参考资料[10]、[12]。</p><h3 id="N10281" class="ibm-h3">4．1 UML的安装与调试</h3><p>UML的安装需要一台运行Linux 2.2.15以上，或者2.3.22以上的I386机器。对于2.6.8及其以前版本的UML，采用两种形式发布：一种是以RPM包的形式发布，一种是以源代码的形式提供UML的安装。按照UML的说明，以RPM形式提供的安装包比较陈旧且会有许多问题。以二进制形式发布的UML包并不包含所需要的调试信息，这些代码在发布时已经做了程度不同的优化。所以，要想利用UML调试Linux系统内核，需要使用最新的UML patch代码和对应版本的Linux内核编译、安装UML。完成UML的补丁之后，会在arch目录下产生一个um目录，主要的UML代码都放在该目录下。</p><p>从2.6.9版本之后（包含2.6.9版本的Linux），User-Mode Linux已经随Linux内核源代码树一起发布，它存放于arch/um目录下。</p><p>编译好UML的内核之后，直接使用gdb运行已经编译好的内核即可进行调试。</p><h3 id="N1028C" class="ibm-h3">4．2使用UML调试系统内核的特点和不足</h3><p>目前，用户模式 Linux 虚拟机也存在一定的局限性。由于UML虚拟机是基于Linux系统调用接口的方式实现的虚拟机，所以用户模式内核不能访问主机系统上的硬件设备。因此，UML并不适合于调试那些处理实际硬件的驱动程序。不过，如果所编写的内核程序不是硬件驱动，例如Linux文件系统、协议栈等情况，使用UML作为调试工具还是一个不错的选择。</p><h2 id="N10293" class="ibm-h2">5.	内核调试配置选项</h2><p>为了方便调试和测试代码，内核提供了许多与内核调试相关的配置选项。这些选项大部分都在内核配置编辑器的内核开发(kernel hacking)菜单项中。在内核配置目录树菜单的其他地方也还有一些可配置的调试选项，下面将对他们作一定的介绍。</p><p>Page alloc debugging ：CONFIG_DEBUG_PAGEALLOC: </p><p>不使用该选项时，释放的内存页将从内核地址空间中移出。使用该选项后，内核推迟移
+出内存页的过程，因此能够发现内存泄漏的错误。</p><p>Debug memory allocations ：CONFIG_DEBUG_SLAB:  </p><p>该打开该选项时，在内核执行内存分配之前将执行多种类型检查，通过这些类型检查可
+以发现诸如内核过量分配或者未初始化等错误。内核将会在每次分配内存前后时设置一些警戒值，如果这些值发生了变化那么内核就会知道内存已经被操作过并给出明确的提示，从而使各种隐晦的错误变得容易被跟踪。</p><p>Spinlock debugging ：CONFIG_DEBUG_SPINLOCK:</p><p>打开此选项时，内核将能够发现spinlock未初始化及各种其他的错误,能用于排除一些死锁引起的错误。</p><p>Sleep-inside-spinlock checking：CONFIG_DEBUG_SPINLOCK_SLEEP: </p><p>打开该选项时，当spinlock的持有者要睡眠时会执行相应的检查。实际上即使调用者目前没有睡眠，而只是存在睡眠的可能性时也会给出提示。</p><p>Compile the kernel with debug info ：CONFIG_DEBUG_INFO:</p><p>打开该选项时，编译出的内核将会包含全部的调试信息，使用gdb时需要这些调试信息。</p><p>Stack utilization instrumentation ：CONFIG_DEBUG_STACK_USAGE:</p><p>该选项用于跟踪内核栈的溢出错误，一个内核栈溢出错误的明显的现象是产生oops错
+误却没有列出系统的调用栈信息。该选项将使内核进行栈溢出检查，并使内核进行栈使用的统计。</p><p>Driver Core verbose debug messages：CONFIG_DEBUG_DRIVER:</p><p>该选项位于"Device drivers-&gt; Generic Driver Options"下，打开该选项使得内核驱动核心产生大量的调试信息，并将他们记录到系统日志中。</p><p>Verbose SCSI error reporting (kernel size +=12K) ：CONFIG_SCSI_CONSTANTS:</p><p>该选项位于"Device drivers/SCSI device support"下。当SCSI设备出错时内核将给出详细的出错信息。</p><p>Event debugging：CONFIG_INPUT_EVBUG: </p><p>打开该选项时，会将输入子系统的错误及所有事件都输出到系统日志中。该选项在产生了详细的输入报告的同时，也会导致一定的安全问题。</p><p>以上内核编译选项需要读者根据自己所进行的内核编程的实际情况，灵活选取。在使用以上介绍的三种源代码级的内核调试工具时，一般需要选取CONFIG_DEBUG_INFO选项，以使编译的内核包含调试信息。</p><h2 id="N102C0" class="ibm-h2">6.	总结</h2><p>上面介绍了一些调试Linux内核的方法，特别是详细介绍了三种源代码级的内核调试工具，以及搭建这些内核调试环境的方法，读者可以根据自己的情况从中作出选择。</p><p>调试工具（例如gdb）的运行都需要操作系统的支持，而此时内核由于一些错误的代码而不能正确执行对系统的管理功能，所以对内核的调试必须采取一些特殊的方法进行。以上介绍的三种源代码级的调试方法，可以归纳为以下两种策略：</p><p>I、为内核增加调试Stub，利用调试Stub进行远程调试，这种调试策略需要target及development机器才能完成调试任务。</p><p>II、将虚拟机技术与调试工具相结合，使Linux内核在虚拟机中运行从而利用调试器对内核进行调试。这种策略需要制作适合在虚拟机中运行的系统内核。</p><p>由不同的调试策略决定了进行调试时不同的工作原理，同时也形成了各种调试方法不同的软硬件需求和各自的特点。</p><p>另外，需要说明的是内核调试能力的掌握很大程度上取决于经验和对整个操作系统的深入理解。对系统内核的全面深入的理解，将能在很大程度上加快对Linux系统内核的开发和调试。</p><p>对系统内核的调试技术和方法绝不止上面介绍所涉及的内容，这里只是介绍了一些经常看到和听到方法。在Linux内核向前发展的同时，内核的调试技术也在不断的进步。希望以上介绍的一些方法能对读者开发和学习Linux有所帮助。</p><h2 id="N102D3" class="ibm-h2">参考资料</h2><p>[1] 	<a href="http://oss.sgi.com/projects/kdb/">http://oss.sgi.com/projects/kdb/</a></p><p>[2]  <a href="https://www.ibm.com/developerworks/cn/linux/sdk/l-debug/index.html">http://www.ibm.com/developerworks/cn/linux/sdk/l-debug/index.html</a></p><p>[3]  <a href="https://www.ibm.com/developerworks/cn/linux/l-kdbug">http://www.ibm.com/developerworks/cn/linux/l-kdbug</a>/</p><p>[4]  <a href="https://www.ibm.com/developerworks/cn/linux/l-kprobes.html">http://www.ibm.com/developerworks/cn/linux/l-kprobes.html</a></p><p>[5]	<a href="http://kgdb.linsyssoft.com/downloads.htm">http://kgdb.linsyssoft.com/downloads.htm</a></p><p>[6]	<a href="ftp://166.111.68.183/">ftp://166.111.68.183</a></p><p>[8]	<a href="http://www.uclinux.org/pub/uClinux/dist/">http://www.uclinux.org/pub/uClinux/dist/</a></p><p>[9]	<a href="http://opensrc.sec.samsung.com/download/linux-2.6.9-hsc0.patch.gz">http://opensrc.sec.samsung.com/download/linux-2.6.9-hsc0.patch.gz</a></p><p>[10]	<a href="http://www.kernel.org/">http:// www.kernel.org</a></p><p>[11]	<a href="http://user-mode-linux.sourceforge.net/">http://user-mode-linux.sourceforge.net/</a></p><p>[12]	<a href="https://www.ibm.com/developerworks/cn/linux/l-skyeye/part1/">http://www.ibm.com/developerworks/cn/linux/l-skyeye/part1/</a></p><p>[13]	<a href="http://www.ibm.com/developerworks/cn/views/linux/tutorials.jsp?cv_doc_id=84978">http://www.ibm.com/developerworks/cn/views/linux/tutorials.jsp?cv_doc_id=84978</a></p><h2 id="N10315" class="ibm-h2">参考文献</h2><p>[1]Robert Love	Linux kernel development机械工业出版社</p><p>[2]陈渝 源代码开发的嵌入式系统软件分析与实践 北京航空航天大学出版社</p><p>[3]Alessandro Rubini  Linux device driver 2se Edition  O'Reilly</p><p>[4]Jonathan Corbet  Linux device driver 3rd Edition  O'Reilly</p><p>[5]李善平 Linux内核源代码分析大全 机械工业出版社</p><!--CMA ID: 100456--><!--Site ID: 10--><!--XSLT stylesheet used to transform this file: dw-document-html-8.0.xsl-->
+                                        <!-- Article Quiz -->
+                                        
+                                        <!-- Article Resources -->
+                                        
+                                        <!-- Commenting -->
+<!-- INLINE_COMMENTS_BEGIN: -->
+<div class="ibm-alternate-rule"><hr></div>
+<div id="dw-article-cmts-top" class="ibm-columns">
+    <div class="ibm-col-6-2">
+        <h4 id="icomments" class="ibm-h4">评论</h4>
+        <div id="dw-article-cmts-login">
+            <p>添加或订阅评论，请先<a onclick="window.location=userLinks[0].url;" tabindex="0" role="link">登录</a>或<a onclick="window.location=userLinks[1].url;" tabindex="0" role="link">注册</a>。</p>
+        </div>
+    </div>    
+    <div class="ibm-col-6-2" id="dw-notify"> 
+        <input type="checkbox" value="1" name="comment_notification" id="comment_notification" disabled="">
+        <label for="comment_notification" style="color: rgb(204, 204, 204);">有新评论时提醒我</label>	   
+    </div>
+</div>
+
+<div class="dw-article-cmts-container">       
+    <div class="ibm-no-print jquery-comments read-only" id="dw-icomments-container"><div class="commenting-field main"><img src="./Linux 系统内核的调试_files/user-icon.png" alt="" class="profile-picture round by-current-user"><div class="textarea-wrapper"><span class="close" style="display: none;"><span class="left"></span><span class="right"></span></span><div class="textarea" data-placeholder="添加评论" contenteditable="true" style="height: 3.65em;"></div><div class="control-row" style="display: none;"><span class="send save highlight-background">提交</span></div></div></div><ul class="navigation"><div class="navigation-wrapper"><li data-sort-key="newest" data-container-name="comments" class="active">最新的</li><li data-sort-key="oldest" data-container-name="comments">历史</li><li data-sort-key="popularity" data-container-name="comments">热门</li></div><div class="navigation-wrapper responsive"><li class="title active"><header>最新的</header></li><ul class="dropdown"><li data-sort-key="newest" data-container-name="comments" class="active">最新的</li><li data-sort-key="oldest" data-container-name="comments">历史</li><li data-sort-key="popularity" data-container-name="comments">热门</li></ul></div></ul><div class="data-container" data-container="comments"><ul id="comment-list" class="main"><li data-id="4235" class="comment"><div class="comment-wrapper"><img src="./Linux 系统内核的调试_files/user-icon.png" alt="" class="profile-picture round"><time data-original="1331373600000">2012 年 03 月 10 日</time><div class="name"><a href="https://www.ibm.com/developerworks/community/profiles/user/%E8%A5%BF%E5%86%9C%E9%AD%94%E5%B3%B0">西农魔峰</a></div><div class="wrapper"><div class="content">细致入微。精彩!</div><span class="actions"><button class="action reply" type="button">回复</button><span class="separator">·</span><button class="action upvote"><span class="upvote-count">0</span><i class="fa fa-thumbs-up"></i></button><span class="separator">·</span><a class="action reply" href="https://www.ibm.com/developerworks/community/report?lang=cn&amp;referingURL=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-kdb%2F&amp;mymessage=%E8%AF%84%E8%AE%BA%3A%20%E7%BB%86%E8%87%B4%E5%85%A5%E5%BE%AE%E3%80%82%E7%B2%BE%E5%BD%A9!%0D%E7%94%B1%20%E8%A5%BF%E5%86%9C%E9%AD%94%E5%B3%B0%20%20%E4%BA%8E%202012%20%E5%B9%B4%2003%20%E6%9C%88%2010%20%E6%97%A5%20%0D%0D---%20%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA%20---" target="_blank">报告滥用<i class="fa image" style="background-image: url(&quot;/developerworks/maverick/image/report-abuse.png&quot;);"></i></a></span></div></div><ul class="child-comments"></ul></li></ul><div class="no-comments no-data"><i class="fa fa-comments fa-2x"></i><br>第一个评论</div></div></div>
+</div>
+<!-- INLINE_COMMENTS_END -->                                        <!-- CENTER_6_4_CONTENT_COLUMN_END -->
+                                    </div>   
+                                </div>
+                        <!--Rating_Meta_BEGIN--><div class="metavalue">static.content.url=http://www.ibm.com/developerworks/js/artrating/</div><div class="metavalue">SITE_ID=10</div><div class="metavalue">Zone=Linux</div><div class="metavalue">ArticleID=100456</div><div class="metavalue">ArticleTitle=Linux 系统内核的调试</div><div class="metavalue">publish-date=12182005</div><script language="javascript" type="text/javascript">document.write('<div class="metavalue">url='+location.href.replace(/</g,  '%3C')+'</div>');</script><div class="metavalue">url=https://www.ibm.com/developerworks/cn/linux/l-kdb/</div><!--Rating_Meta_END-->
+                    </div>
+                    <!-- END_IBM-CONTENT-MAIN -->
+                </div>
+                <!-- END_IBM-CONTENT-BODY -->
+            </div>
+            <!-- END_IBM-CONTENT -->
+        </div>
+        <!-- END_IBM-PCON -->
+    </main>
+    <!-- MAIN_CONTENT_END -->
+    
+    <!-- END_CONTENT-WRAPPER -->	
+</div>
+<!-- FOOTER_BEGIN -->
+<footer role="contentinfo" aria-label="IBM developerWorks">
+    <div id="dw-footer-module" class="dw-footer-home">
+        <section aria-label="参考资料" role="contentinfo">
+            <div class="ibm-columns">
+                <div class="ibm-col-6-1 dw-footer-col-1">
+                    <ul>
+                        <li class="dw-footer-heading" aria-label="developerWorks">developerWorks</li>
+                        <li><a href="https://www.ibm.com/developerworks/secure/feedback.jsp?domain=dwchina">站点反馈</a></li>
+                        <li class="dw-footer-newline"><a href="https://www.ibm.com/developerworks/secure/myideas2.jsp?domain=dwchina">我要投稿</a></li>
+                        <li class="dw-footer-newline"><a href="https://www.ibm.com/developerworks/cn/author/">投稿指南</a></li>
+                        <li class="dw-footer-newline"><a href="https://www.ibm.com/developerworks/community/report?lang=zh">报告滥用</a></li>
+                        <li class="dw-footer-newline"><a href="https://www.ibm.com/developerworks/cn/community/terms/thirdparty/">第三方提示</a></li>
+                    </ul>
+                    <ul>
+                        <li class="dw-footer-newline"><a href="https://weibo.com/ibmdw/">关注微博</a></li>
+                    </ul>
+                </div>
+                <div class="ibm-col-6-1 dw-footer-col-2">
+                    <ul>
+                        <li class="dw-footer-heading" aria-label="加入">加入</li>
+                        <li class="dw-footer-newline"><a href="https://www.ibm.com/partnerworld/isv/">ISV 资源 (英语)</a></li>
+                    </ul>
+                    <ul class="dw-footer-lang" aria-label="选择语言">
+                        <li class="dw-footer-heading">选择语言</li>
+                        <li><a href="https://www.ibm.com/developerworks/">English</a></li>
+                        <li><a href="https://www.ibm.com/developerworks/cn/" lang="zh">中文</a></li>
+                        <li><a href="https://www.ibm.com/developerworks/jp/" lang="ja">日本語</a></li>
+                        <li><a href="https://www.ibm.com/developerworks/ru/" lang="ru">Русский</a></li>
+                        <li class="dw-footer-newline"><a href="https://www.ibm.com/developerworks/br/" lang="pt">Português (Brasil)</a></li>
+                        <li><a href="https://www.ibm.com/developerworks/ssa/" lang="es">Español</a></li>
+                        <li><a href="https://developer.ibm.com/kr/" lang="kr">한글</a></li>
+                    </ul>
+                </div>
+                <div class="ibm-col-6-1 dw-footer-col-3"> </div>
+                <div class="ibm-col-6-1 dw-footer-col-4">
+                    <ul class="dw-footer-categories">
+                        <li class="dw-footer-category">
+                            <a href="https://www.ibm.com/developerworks/cn/views/global/libraryview.jsp">技术文档库</a>
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="http://ibmdeveloperworks.mkt6741.com/developerWorksChina-NewsletterSubscriptionPage/">dW 中国时事通讯</a>  
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="https://developer.ibm.com/cn/dwblog/">博客</a>  
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="https://developer.ibm.com/cn/events/">活动</a>  
+                        </li>
+                    </ul>
+                </div>
+                <div class="ibm-col-6-1 dw-footer-col-5">
+                    <ul class="dw-footer-categories">
+                        <li class="dw-footer-category">
+                            <a href="https://www.ibm.com/developerworks/cn/community/">社区</a>  
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="https://developer.ibm.com/cn/">开发者中心</a>  
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="https://developer.ibm.com/cn/tv/">视频</a>  
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="https://www.ibm.com/developerworks/cn/rss/">订阅源</a>  
+                        </li>
+
+                    </ul>
+                </div>
+                <div class="ibm-col-6-1 dw-footer-col-6">
+                    <ul class="dw-footer-categories">
+                        <li class="dw-footer-category">
+                            <a href="https://www.ibm.com/developerworks/cn/downloads/">软件下载</a>  
+                        </li>
+                        <li class="dw-footer-category">
+                            <a href="https://developer.ibm.com/cn/journey/">Code patterns</a>  
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+    <div id="dw-footer" class="ibm-padding-normal ibm-alternate">
+        <div class="ibm-columns">
+            <div class="ibm-col-1-1">
+                <div class="dw-footer-corporate-links">
+                <ul>
+                    <li><a href="https://www.ibm.com/contact/cn/zh/">联系 IBM</a></li>
+                    <li><a href="https://www.ibm.com/privacy/cn/zh/">隐私条约</a></li>
+                    <li><a href="https://www.ibm.com/developerworks/community/terms?lang=zh">使用条款</a></li>
+                    <li><a href="https://www.ibm.com/accessibility/cn/zh/">信息无障碍选项</a></li>
+                    <li class="ibm-feedbacklink"><a href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#">反馈</a></li>
+                    <li id="ibm-truste-cp"><a onclick="truste.eu.clickListener();return false;" href="https://www.ibm.com/developerworks/cn/linux/l-kdb/#">Cookie 首选项</a></li>
+                </ul>                 
+                </div>    
+            </div>
+        </div>
+    </div>        
+</footer> <!-- FOOTER_END -->
+
+<!-- END_IBM-TOP -->
+</div>
+
+<!-- SCRIPTS_INCLUDE_BEGIN -->
+<!-- Styles -->
+<link rel="stylesheet" type="text/css" href="./Linux 系统内核的调试_files/jquery-comments.css">
+<link rel="stylesheet" href="./Linux 系统内核的调试_files/font-awesome.min.css">
+
+<!-- Libraries -->
+<script type="text/javascript" src="./Linux 系统内核的调试_files/jquery-comments.min.js.下载"></script>
+<script type="text/javascript" src="./Linux 系统内核的调试_files/moment-with-locales.js.下载"></script>
+<script type="text/javascript" src="./Linux 系统内核的调试_files/ContentComments.js.下载"></script>
+<script type="text/javascript" src="./Linux 系统内核的调试_files/ContentCommentsFormatter.js.下载"></script>
+<script type="text/javascript" language="JavaScript">
+
+	IBMCore.common.module.masthead.subscribe("ready", "customjs", setupCommentsPlugin).runAsap(setupCommentsPlugin);
+
+	function setupCommentsPlugin(){
+		//debugger;
+			//alert(userLinks);
+			var commentsInitInfo = {
+				contentId : $("div[class=metavalue]:contains('ArticleID=')").text().split("=")[1],
+				siteId :  $("div[class=metavalue]:contains('SITE_ID=')").text().split("=")[1],
+				pluginDivId : '#dw-icomments-container',
+				notifyElementId : "#comment_notification",
+				loginMessageDivId : "#dw-article-cmts-login",
+				totalCommentsDivId : "#nCmts",
+						isIdea:false
+
+			};				
+								
+			ContentComments.Setup(commentsInitInfo);
+	}
+</script>
+
+<!-- Segment -->
+<script src="./Linux 系统内核的调试_files/bluemix-analytics.min.js.下载"></script>    
+
+<!-- SCRIPTS_INCLUDE_END -->
+
+
+
+<div id="ibm-overlay-backdrop"></div><div class="ibm-common-overlay ibm-overlay-alt-three" id="ibm-overlaywidget-N10076" role="dialog" aria-describedby="ibm-overlaywidget-N10076-content" aria-label="Overlay content" data-widget="overlay container" data-name=""><div class="ibm-overlay-heading-con"><p class="ibm-icononly"><a href="javascript:void(0);" class="ibm-close-link" role="button">关闭</a></p></div><div id="ibm-overlaywidget-N10076-content" class="content"><div class="ibm-widget-processed" data-widget="overlay" id="N10076"><img alt="" border="0" src="./Linux 系统内核的调试_files/image001.gif" width="450"></div></div></div><div class="ibm-common-overlay ibm-overlay-alt-three" id="ibm-overlaywidget-N1008D" role="dialog" aria-describedby="ibm-overlaywidget-N1008D-content" aria-label="Overlay content" data-widget="overlay container" data-name=""><div class="ibm-overlay-heading-con"><p class="ibm-icononly"><a href="javascript:void(0);" class="ibm-close-link" role="button">关闭</a></p></div><div id="ibm-overlaywidget-N1008D-content" class="content"><div class="ibm-widget-processed" data-widget="overlay" id="N1008D"><img alt="" border="0" src="./Linux 系统内核的调试_files/table1.gif" width="589"></div></div></div><div class="ibm-common-overlay ibm-overlay-alt-three" id="ibm-overlaywidget-N10109" role="dialog" aria-describedby="ibm-overlaywidget-N10109-content" aria-label="Overlay content" data-widget="overlay container" data-name=""><div class="ibm-overlay-heading-con"><p class="ibm-icononly"><a href="javascript:void(0);" class="ibm-close-link" role="button">关闭</a></p></div><div id="ibm-overlaywidget-N10109-content" class="content"><div class="ibm-widget-processed" data-widget="overlay" id="N10109"><img alt="" border="0" src="./Linux 系统内核的调试_files/table2.gif" width="584"></div></div></div><div class="ibm-common-overlay ibm-overlay-alt-three" id="ibm-overlaywidget-N101AA" role="dialog" aria-describedby="ibm-overlaywidget-N101AA-content" aria-label="Overlay content" data-widget="overlay container" data-name=""><div class="ibm-overlay-heading-con"><p class="ibm-icononly"><a href="javascript:void(0);" class="ibm-close-link" role="button">关闭</a></p></div><div id="ibm-overlaywidget-N101AA-content" class="content"><div class="ibm-widget-processed" data-widget="overlay" id="N101AA"><img alt="" border="0" src="./Linux 系统内核的调试_files/table3.gif" width="513"></div></div></div><div class="ibm-common-overlay ibm-overlay-alt-three" id="ibm-overlaywidget-N101C5" role="dialog" aria-describedby="ibm-overlaywidget-N101C5-content" aria-label="Overlay content" data-widget="overlay container" data-name=""><div class="ibm-overlay-heading-con"><p class="ibm-icononly"><a href="javascript:void(0);" class="ibm-close-link" role="button">关闭</a></p></div><div id="ibm-overlaywidget-N101C5-content" class="content"><div class="ibm-widget-processed" data-widget="overlay" id="N101C5"><img alt="" border="0" src="./Linux 系统内核的调试_files/image002.jpg" width="600"></div></div></div><div class="ibm-common-overlay ibm-overlay-alt-three" id="ibm-overlaywidget-N101DA" role="dialog" aria-describedby="ibm-overlaywidget-N101DA-content" aria-label="Overlay content" data-widget="overlay container" data-name=""><div class="ibm-overlay-heading-con"><p class="ibm-icononly"><a href="javascript:void(0);" class="ibm-close-link" role="button">关闭</a></p></div><div id="ibm-overlaywidget-N101DA-content" class="content"><div class="ibm-widget-processed" data-widget="overlay" id="N101DA"><img alt="" border="0" src="./Linux 系统内核的调试_files/image004.jpg" width="527"></div></div></div><div id="ibm-mobilemenu-screen"></div><script async="async" type="text/javascript" crossorigin="" src="./Linux 系统内核的调试_files/get"></script><script src="./Linux 系统内核的调试_files/js(1)" id="mm_pp_background"></script><img src="./Linux 系统内核的调试_files/img" style="display: none;"><iframe src="./Linux 系统内核的调试_files/iframe.html" id="mm_sync_back_ground" style="visibility: hidden; display: none;"></iframe><iframe id="LOTCCFrameMon Mar 26 2018 16:20:49 GMT+0800 (China Standard Time)" src="./Linux 系统内核的调试_files/rt=ifr.html" title="empty" tabindex="-1" role="presentation" style="border: 0px; width: 0px; height: 0px; display: block;"></iframe><iframe name="_hjRemoteVarsFrame" title="_hjRemoteVarsFrame" id="_hjRemoteVarsFrame" src="./Linux 系统内核的调试_files/rcj-99d43ead6bdf30da8ed5ffcb4f17100c.html" style="display: none !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important;"></iframe><div id="ads"></div></body></html>
